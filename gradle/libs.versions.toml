@@ -5,8 +5,10 @@ appcompat = "1.7.0"
 constraintlayout = "2.1.4"
 coreKtx = "1.13.1"
 fragmentKtx = "1.8.1"
+lifecycleKtx = "2.8.2"
 googleMaps = "19.0.0"
 googleMapsKtx = "5.0.0"
+googlePlacesKtx = "3.2.0"
 hilt = "2.49"
 kotlin = "1.9.0"
 junit = "4.13.2"
@@ -20,8 +22,10 @@ androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version
 androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-fragment-ktx = { group = "androidx.fragment", name = "fragment-ktx", version.ref = "fragmentKtx" }
+androidx-lifecycle-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleKtx" }
 google-maps = { group = "com.google.android.gms", name = "play-services-maps", version.ref = "googleMaps" }
 google-maps-ktx = { group = "com.google.maps.android", name = "maps-ktx", version.ref = "googleMapsKtx" }
+google-places-ktx = { group = "com.google.maps.android", name = "places-ktx", version.ref = "googlePlacesKtx" }
 hilt = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }

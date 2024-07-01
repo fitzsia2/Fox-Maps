@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
+    
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 
     <application
         android:name=".App"
@@ -13,6 +16,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.FoxMaps"
         tools:targetApi="31">
+        
         <activity
             android:name=".MainActivity"
             android:exported="true">
@@ -27,5 +31,9 @@
             android:name="com.google.android.geo.API_KEY"
             android:value="${MAPS_API_KEY}" />
     </application>
+
+    <queries>
+        <package android:name="com.google.android.apps.maps" />
+    </queries>
 
 </manifest>
