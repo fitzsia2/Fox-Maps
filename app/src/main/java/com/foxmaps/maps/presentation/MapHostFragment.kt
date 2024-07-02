@@ -9,14 +9,17 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.graphics.Insets
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.doOnLayout
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.flowWithLifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.viewbinding.ViewBinding
 import com.foxmaps.R
 import com.foxmaps.databinding.MapHostFragmentBinding
 import com.foxmaps.maps.domain.Location
@@ -32,11 +35,13 @@ import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.GoogleMap.OnCameraMoveStartedListener
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.material.bottomsheet.BottomSheetBehavior
+import com.google.android.material.bottomsheet.BottomSheetBehavior.BottomSheetCallback
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import timber.log.Timber
-import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 @AndroidEntryPoint
 class MapHostFragment : Fragment() {
@@ -74,20 +79,25 @@ class MapHostFragment : Fragment() {
         }
     }
 
+    private val ViewBinding.peekHeight get() = (root.height * 0.4).toInt()
+
+    private val bottomSheetBehavior get() = binding?.mapBottomSheetFrame?.let { BottomSheetBehavior.from(it) }
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         val locationPermission = inflater.context.getLocationPermission()
         viewModel.setLocationPermission(locationPermission)
         viewModel.setMapLoading(true)
 
         val binding = MapHostFragmentBinding.inflate(inflater)
-        binding.btnClose.setOnClickListener { viewModel.clearPointOfInterest() }
+        this.binding = binding
+
+        binding.initBottomSheet()
 
         ViewCompat.setOnApplyWindowInsetsListener(binding.root) { _, insets ->
             binding.applyWindowInsets(insets)
             insets
         }
 
-        this.binding = binding
         return binding.root
     }
 
@@ -103,12 +113,15 @@ class MapHostFragment : Fragment() {
     private fun MapHostFragmentBinding.applyWindowInsets(insets: WindowInsetsCompat) {
         val systemBarsInsets = insets.getInsets(WindowInsetsCompat.Type.systemBars())
         mapOverlay.setPadding(systemBarsInsets)
-        mapBottomSheetFrame.setPadding(systemBarsInsets)
+        (mapBottomSheetFrame.layoutParams as? CoordinatorLayout.LayoutParams)?.let {
+            mapBottomSheetFrame.setPadding(systemBarsInsets.left, systemBarsInsets.top, systemBarsInsets.right, systemBarsInsets.bottom)
+        }
         withMapAsync { it.setPadding(systemBarsInsets) }
     }
 
     private fun MapHostFragmentBinding.bind(screenState: ScreenState) {
-        progressBar.isVisible = screenState.mapLoading
+        progressBar.isVisible = screenState.showSpinner
+        Timber.d("bind: ${screenState}")
         when (screenState) {
             is ScreenState.Loaded -> bindLoadedScreenState(screenState)
             else -> Unit
@@ -173,10 +186,8 @@ class MapHostFragment : Fragment() {
     }
 
     private fun MapHostFragmentBinding.bindBottomSheet(mapBottomSheetState: MapBottomSheetState) {
-        mapBottomSheetRoot.isVisible = mapBottomSheetState !is MapBottomSheetState.Closed
-        bottomSheetProgressBar.isVisible = mapBottomSheetState.showProgressBar
-        mapBottomSheetContent.isVisible = mapBottomSheetState is MapBottomSheetState.Loaded
         imgSelectedPlace.isVisible = mapBottomSheetState.showImage
+        bindBottomSheetBehavior(mapBottomSheetState)
         when (mapBottomSheetState) {
             is MapBottomSheetState.Loaded -> {
                 txtSelectedPlaceName.text = mapBottomSheetState.mapPlace.name
@@ -186,27 +197,63 @@ class MapHostFragment : Fragment() {
             }
             is MapBottomSheetState.Error -> {
                 txtSelectedPlaceName.text = getString(R.string.unknown_error)
-                Timber.e("bindBottomSheet: ${mapBottomSheetState.exception.stackTrace}")
             }
-            is MapBottomSheetState.Closed,
-            is MapBottomSheetState.Loading -> Unit
+            is MapBottomSheetState.Loading -> {
+                txtSelectedPlaceName.text = mapBottomSheetState.name
+            }
+            is MapBottomSheetState.Closed -> Unit
+        }
+    }
+
+    private fun bindBottomSheetBehavior(mapBottomSheetState: MapBottomSheetState) {
+        if (bottomSheetBehavior?.state == BottomSheetBehavior.STATE_HIDDEN && mapBottomSheetState.isVisible) {
+            bottomSheetBehavior?.state = BottomSheetBehavior.STATE_COLLAPSED
+        }
+        if (bottomSheetBehavior?.state != BottomSheetBehavior.STATE_HIDDEN && mapBottomSheetState.isHidden) {
+            bottomSheetBehavior?.state = BottomSheetBehavior.STATE_HIDDEN
         }
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        binding?.initMap()
-
-        binding?.withMapAsync { map ->
-            map.setOnMapLoadedCallback {
-                viewModel.setMapLoading(false)
+        binding?.let { binding ->
+            binding.initMap()
+            binding.withMapAsync { map ->
+                map.setOnMapLoadedCallback {
+                    viewModel.setMapLoading(false)
+                }
             }
-        }
 
-        viewModel.screenStateStream
-            .flowWithLifecycle(lifecycle)
-            .onEach { screenState -> binding?.bind(screenState) }
-            .launchIn(viewLifecycleOwner.lifecycleScope)
+            viewModel.screenStateStream
+                .flowWithLifecycle(lifecycle)
+                .onEach { screenState -> binding.bind(screenState) }
+                .launchIn(viewLifecycleOwner.lifecycleScope)
+        }
+    }
+
+    private fun MapHostFragmentBinding.initBottomSheet() {
+        root.doOnLayout { bottomSheetBehavior?.peekHeight = peekHeight }
+        bottomSheetBehavior?.isFitToContents = false
+        bottomSheetBehavior?.isHideable = true
+        bottomSheetBehavior?.addBottomSheetCallback(object : BottomSheetCallback() {
+
+            override fun onStateChanged(bottomSheet: View, newState: Int) {
+                when (newState) {
+                    BottomSheetBehavior.STATE_COLLAPSED -> "Collapsed"
+                    BottomSheetBehavior.STATE_HIDDEN -> "Hidden"
+                    BottomSheetBehavior.STATE_EXPANDED -> "Expanded"
+                    BottomSheetBehavior.STATE_HALF_EXPANDED -> "Half expanded"
+                    else -> null
+                }?.let { Timber.d("onStateChanged: $it") }
+            }
+
+            override fun onSlide(bottomSheet: View, slideOffset: Float) {
+                if (slideOffset == -1f) {
+                    viewModel.clearPointOfInterest()
+                }
+            }
+        })
+        bottomSheetBehavior?.state = BottomSheetBehavior.STATE_HIDDEN
     }
 
     private fun MapHostFragmentBinding.initMap() {
@@ -242,7 +289,7 @@ class MapHostFragment : Fragment() {
 
     companion object {
 
-        private val LOCATION_UPDATE_INTERVAL = 2.milliseconds
+        private val LOCATION_UPDATE_INTERVAL = 3.seconds
         private const val DEFAULT_CAMERA_ZOOM = 15f
 
         fun newInstance(): MapHostFragment {

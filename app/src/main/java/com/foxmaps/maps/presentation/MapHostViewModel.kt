@@ -46,7 +46,7 @@ class MapHostViewModel @Inject constructor(
                     } else {
                         launch {
                             try {
-                                mapBottomSheetStateStream.value = MapBottomSheetState.Loading
+                                mapBottomSheetStateStream.value = MapBottomSheetState.Loading(poi.name)
                                 val place = mapsRepository.getPlace(poi.placeId)
                                 mapBottomSheetStateStream.value = MapBottomSheetState.Loaded(place)
                             } catch (e: Exception) {
