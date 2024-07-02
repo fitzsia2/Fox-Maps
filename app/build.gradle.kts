@@ -2,6 +2,8 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
     id("com.google.android.libraries.mapsplatform.secrets-gradle-plugin")
+    id("kotlin-kapt")
+    alias(libs.plugins.hilt)
 }
 
 android {
@@ -49,9 +51,14 @@ dependencies {
     implementation(libs.google.maps.ktx)
     implementation(libs.google.places.ktx)
     implementation(libs.hilt)
+    kapt(libs.hilt.compiler)
     implementation(libs.material)
     implementation(libs.timber)
     testImplementation(libs.junit)
+}
+
+kapt {
+    correctErrorTypes = true
 }
 
 secrets {

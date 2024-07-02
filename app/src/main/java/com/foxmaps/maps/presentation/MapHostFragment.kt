@@ -35,6 +35,7 @@ import com.google.android.gms.maps.model.LatLng
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import timber.log.Timber
 import kotlin.time.Duration.Companion.milliseconds
 
 @AndroidEntryPoint
@@ -79,6 +80,7 @@ class MapHostFragment : Fragment() {
         viewModel.setMapLoading(true)
 
         val binding = MapHostFragmentBinding.inflate(inflater)
+        binding.btnClose.setOnClickListener { viewModel.clearPointOfInterest() }
 
         ViewCompat.setOnApplyWindowInsetsListener(binding.root) { _, insets ->
             binding.applyWindowInsets(insets)
@@ -101,6 +103,7 @@ class MapHostFragment : Fragment() {
     private fun MapHostFragmentBinding.applyWindowInsets(insets: WindowInsetsCompat) {
         val systemBarsInsets = insets.getInsets(WindowInsetsCompat.Type.systemBars())
         mapOverlay.setPadding(systemBarsInsets)
+        mapBottomSheetFrame.setPadding(systemBarsInsets)
         withMapAsync { it.setPadding(systemBarsInsets) }
     }
 
@@ -122,6 +125,7 @@ class MapHostFragment : Fragment() {
             is LocationState.Loading -> initLocationTracking()
             is LocationState.WithLocation -> {
                 bindLocation(screenState.locationState)
+                bindBottomSheet(screenState.mapBottomSheetState)
             }
         }
         mapFragment.isVisible = screenState.locationState != LocationState.Loading
@@ -168,6 +172,27 @@ class MapHostFragment : Fragment() {
         locationPermissionRequest.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION))
     }
 
+    private fun MapHostFragmentBinding.bindBottomSheet(mapBottomSheetState: MapBottomSheetState) {
+        mapBottomSheetRoot.isVisible = mapBottomSheetState !is MapBottomSheetState.Closed
+        bottomSheetProgressBar.isVisible = mapBottomSheetState.showProgressBar
+        mapBottomSheetContent.isVisible = mapBottomSheetState is MapBottomSheetState.Loaded
+        imgSelectedPlace.isVisible = mapBottomSheetState.showImage
+        when (mapBottomSheetState) {
+            is MapBottomSheetState.Loaded -> {
+                txtSelectedPlaceName.text = mapBottomSheetState.mapPlace.name
+                mapBottomSheetState.mapPlace.photos.firstOrNull()?.let { photo ->
+                    imgSelectedPlace.setImageBitmap(photo.bitmap)
+                }
+            }
+            is MapBottomSheetState.Error -> {
+                txtSelectedPlaceName.text = getString(R.string.unknown_error)
+                Timber.e("bindBottomSheet: ${mapBottomSheetState.exception.stackTrace}")
+            }
+            is MapBottomSheetState.Closed,
+            is MapBottomSheetState.Loading -> Unit
+        }
+    }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         binding?.initMap()
@@ -189,9 +214,11 @@ class MapHostFragment : Fragment() {
             map.moveCamera(CameraUpdateFactory.zoomTo(DEFAULT_CAMERA_ZOOM))
             map.setOnPoiClickListener { poi ->
                 viewModel.setFollowUser(false)
+                viewModel.selectPointOfInterest(poi)
             }
-            map.setOnMapClickListener { latLng ->
+            map.setOnMapClickListener { _ ->
                 viewModel.setFollowUser(false)
+                viewModel.clearPointOfInterest()
             }
             map.setOnMyLocationButtonClickListener {
                 viewModel.setFollowUser(true)
