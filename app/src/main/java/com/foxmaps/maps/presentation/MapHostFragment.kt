@@ -205,8 +205,11 @@ class MapHostFragment : Fragment() {
         bindBottomSheetBehavior(mapBottomSheetState)
         when (mapBottomSheetState) {
             is MapBottomSheetState.Loaded -> {
-                txtSelectedPlaceName.text = mapBottomSheetState.mapPlace.name
-                mapBottomSheetState.mapPlace.photos.firstOrNull()?.let { photo ->
+                val mapPlace = mapBottomSheetState.mapPlace
+                txtSelectedPlaceName.text = mapPlace.name
+                txtSelectedPlaceDescription.text = mapPlace.description
+                txtSelectedPlaceDescription.isVisible = mapBottomSheetState.descriptionIsVisible
+                mapPlace.photos.firstOrNull()?.let { photo ->
                     imgSelectedPlace.setImageBitmap(photo.bitmap)
                 }
             }

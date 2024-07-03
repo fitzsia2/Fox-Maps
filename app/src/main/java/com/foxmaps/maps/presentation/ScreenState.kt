@@ -52,5 +52,7 @@ sealed interface MapBottomSheetState {
     data class Loaded(val mapPlace: MapPlace) : MapBottomSheetState {
 
         override val showImage: Boolean = mapPlace.photos.firstOrNull() != null
+
+        val descriptionIsVisible = !mapPlace.description.isNullOrBlank()
     }
 }

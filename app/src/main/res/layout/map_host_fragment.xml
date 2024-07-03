@@ -71,7 +71,8 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginHorizontal="16dp"
-                        android:textAppearance="@style/TextAppearance.FoxMaps.title"
+                        android:layout_marginTop="4dp"
+                        android:textAppearance="@style/TextAppearance.FoxMaps.Title"
                         tools:text="Center St &amp; Durango St" />
 
                     <com.google.android.material.imageview.ShapeableImageView
@@ -79,13 +80,26 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginHorizontal="16dp"
-                        android:layout_marginTop="4dp"
+                        android:layout_marginTop="8dp"
                         android:adjustViewBounds="true"
                         android:visibility="gone"
                         app:shapeAppearanceOverlay="@style/ShapeAppearance.FoxMaps.Photo"
-                        tools:background="#223311FF"
+                        tools:background="@color/primary"
                         tools:layout_height="280dp"
                         tools:visibility="visible" />
+
+                    <TextView
+                        android:visibility="gone"
+                        tools:visibility="visible"
+                        android:padding="16dp"
+                        android:background="@drawable/bg_description"
+                        android:layout_marginHorizontal="16dp"
+                        tools:text="Minor-league baseball stadium, home to the Tacoma Raniers, with a Mt. Rainier view &amp; luxury suites."
+                        android:id="@+id/txt_selected_place_description"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:textAppearance="@style/TextAppearance.FoxMaps.Body1" />
 
                 </LinearLayout>
 

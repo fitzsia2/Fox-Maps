@@ -32,6 +32,7 @@ class GoogleMapsRemoteSource @Inject constructor(
             Place.Field.LAT_LNG,
             Place.Field.ADDRESS,
             Place.Field.PHOTO_METADATAS,
+            Place.Field.EDITORIAL_SUMMARY,
         )
 
         val place = placesClient.awaitFetchPlace(placeId, fields).place
@@ -41,6 +42,6 @@ class GoogleMapsRemoteSource @Inject constructor(
             listOf(MapPlace.Photo(bitmap, photoMetadata.attributions))
         } ?: listOf()
         val location = Location(place.latLng!!.latitude, place.latLng!!.longitude)
-        return MapPlace(place.name!!, location, place.id!!, photos)
+        return MapPlace(place.name!!, location, place.id!!, photos, place.editorialSummary)
     }
 }

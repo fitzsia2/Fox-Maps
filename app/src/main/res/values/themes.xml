@@ -1,11 +1,13 @@
 <resources>
     <style name="Base.Theme.FoxMaps" parent="Theme.Material3.DayNight.NoActionBar">
-         <item name="colorPrimary">@color/black</item>
+        <item name="colorPrimary">@color/primary</item>
     </style>
 
     <style name="Theme.FoxMaps" parent="Base.Theme.FoxMaps" />
 
-    <style name="TextAppearance.FoxMaps.title" parent="TextAppearance.AppCompat.Title" />
+    <style name="TextAppearance.FoxMaps.Title" parent="TextAppearance.AppCompat.Title" />
+
+    <style name="TextAppearance.FoxMaps.Body1" parent="TextAppearance.AppCompat.Body1" />
 
     <style name="ShapeAppearance.FoxMaps.Photo" parent="ShapeAppearance.Material3.Corner.ExtraLarge" />
 </resources>
