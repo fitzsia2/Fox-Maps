@@ -9,7 +9,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.graphics.Insets
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -40,13 +39,14 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior.BottomSheetCa
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
-import timber.log.Timber
 import kotlin.time.Duration.Companion.seconds
 
 @AndroidEntryPoint
 class MapHostFragment : Fragment() {
 
     private var binding: MapHostFragmentBinding? = null
+
+    private var systemBarInsets: Insets = Insets.NONE
 
     private val viewModel: MapHostViewModel by viewModels()
 
@@ -81,7 +81,22 @@ class MapHostFragment : Fragment() {
 
     private val ViewBinding.peekHeight get() = (root.height * 0.4).toInt()
 
-    private val bottomSheetBehavior get() = binding?.mapBottomSheetFrame?.let { BottomSheetBehavior.from(it) }
+    private val bottomSheetBehavior get() = binding?.mapBottomSheet?.let { BottomSheetBehavior.from(it) }
+
+    private val bottomSheetCallback = object : BottomSheetCallback() {
+
+        override fun onStateChanged(bottomSheet: View, newState: Int) = Unit
+
+        override fun onSlide(bottomSheet: View, slideOffset: Float) {
+            binding?.updateMapPadding(slideOffset)
+            binding?.updateBottomSheetPadding(slideOffset)
+
+            val isHidden = slideOffset == -1f
+            if (isHidden) {
+                viewModel.clearPointOfInterest()
+            }
+        }
+    }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         val locationPermission = inflater.context.getLocationPermission()
@@ -94,6 +109,7 @@ class MapHostFragment : Fragment() {
         binding.initBottomSheet()
 
         ViewCompat.setOnApplyWindowInsetsListener(binding.root) { _, insets ->
+            systemBarInsets = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             binding.applyWindowInsets(insets)
             insets
         }
@@ -113,15 +129,14 @@ class MapHostFragment : Fragment() {
     private fun MapHostFragmentBinding.applyWindowInsets(insets: WindowInsetsCompat) {
         val systemBarsInsets = insets.getInsets(WindowInsetsCompat.Type.systemBars())
         mapOverlay.setPadding(systemBarsInsets)
-        (mapBottomSheetFrame.layoutParams as? CoordinatorLayout.LayoutParams)?.let {
-            mapBottomSheetFrame.setPadding(systemBarsInsets.left, systemBarsInsets.top, systemBarsInsets.right, systemBarsInsets.bottom)
-        }
-        withMapAsync { it.setPadding(systemBarsInsets) }
+
+        val bottomSheetSlideOffset = bottomSheetBehavior?.calculateSlideOffset() ?: 0f
+        binding?.updateMapPadding(bottomSheetSlideOffset)
+        binding?.updateBottomSheetPadding(bottomSheetSlideOffset)
     }
 
     private fun MapHostFragmentBinding.bind(screenState: ScreenState) {
         progressBar.isVisible = screenState.showSpinner
-        Timber.d("bind: ${screenState}")
         when (screenState) {
             is ScreenState.Loaded -> bindLoadedScreenState(screenState)
             else -> Unit
@@ -235,32 +250,31 @@ class MapHostFragment : Fragment() {
         root.doOnLayout { bottomSheetBehavior?.peekHeight = peekHeight }
         bottomSheetBehavior?.isFitToContents = false
         bottomSheetBehavior?.isHideable = true
-        bottomSheetBehavior?.addBottomSheetCallback(object : BottomSheetCallback() {
-
-            override fun onStateChanged(bottomSheet: View, newState: Int) {
-                when (newState) {
-                    BottomSheetBehavior.STATE_COLLAPSED -> "Collapsed"
-                    BottomSheetBehavior.STATE_HIDDEN -> "Hidden"
-                    BottomSheetBehavior.STATE_EXPANDED -> "Expanded"
-                    BottomSheetBehavior.STATE_HALF_EXPANDED -> "Half expanded"
-                    else -> null
-                }?.let { Timber.d("onStateChanged: $it") }
-            }
-
-            override fun onSlide(bottomSheet: View, slideOffset: Float) {
-                if (slideOffset == -1f) {
-                    viewModel.clearPointOfInterest()
-                }
-            }
-        })
+        bottomSheetBehavior?.addBottomSheetCallback(bottomSheetCallback)
         bottomSheetBehavior?.state = BottomSheetBehavior.STATE_HIDDEN
+    }
+
+    private fun MapHostFragmentBinding.updateMapPadding(slideOffset: Float) {
+        val isCollapsedOrSmaller = slideOffset <= 0
+        if (isCollapsedOrSmaller) {
+            val bottomSheetRootY = mapBottomSheet.height - mapBottomSheet.y
+            val bottomPadding = maxOf(systemBarInsets.bottom.toFloat(), bottomSheetRootY)
+            withMapAsync { map ->
+                map.setPadding(systemBarInsets.left, systemBarInsets.top, systemBarInsets.right, bottomPadding.toInt())
+            }
+        }
+    }
+
+    private fun MapHostFragmentBinding.updateBottomSheetPadding(slideOffset: Float) {
+        val compensation = maxOf(slideOffset - 0.9, 0.0) * 10
+        val topPadding = compensation * systemBarInsets.top
+        mapBottomSheet.setPadding(systemBarInsets.left, topPadding.toInt(), systemBarInsets.right, systemBarInsets.bottom)
     }
 
     private fun MapHostFragmentBinding.initMap() {
         withMapAsync { map ->
             map.moveCamera(CameraUpdateFactory.zoomTo(DEFAULT_CAMERA_ZOOM))
             map.setOnPoiClickListener { poi ->
-                viewModel.setFollowUser(false)
                 viewModel.selectPointOfInterest(poi)
             }
             map.setOnMapClickListener { _ ->
