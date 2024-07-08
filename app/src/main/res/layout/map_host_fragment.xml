@@ -89,17 +89,17 @@
                         tools:visibility="visible" />
 
                     <TextView
-                        android:visibility="gone"
-                        tools:visibility="visible"
-                        android:padding="16dp"
-                        android:background="@drawable/bg_description"
-                        android:layout_marginHorizontal="16dp"
-                        tools:text="Minor-league baseball stadium, home to the Tacoma Raniers, with a Mt. Rainier view &amp; luxury suites."
                         android:id="@+id/txt_selected_place_description"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:layout_marginHorizontal="16dp"
                         android:layout_marginTop="8dp"
-                        android:textAppearance="@style/TextAppearance.FoxMaps.Body1" />
+                        android:background="@drawable/bg_description"
+                        android:padding="16dp"
+                        android:textAppearance="@style/TextAppearance.FoxMaps.Body1"
+                        android:visibility="gone"
+                        tools:text="Minor-league baseball stadium, home to the Tacoma Raniers, with a Mt. Rainier view &amp; luxury suites."
+                        tools:visibility="visible" />
 
                 </LinearLayout>
 
@@ -108,5 +108,19 @@
         </FrameLayout>
 
     </LinearLayout>
+
+    <FrameLayout
+        android:id="@+id/full_screen_loader"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/primary">
+
+        <ProgressBar
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:indeterminate="true" />
+
+    </FrameLayout>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

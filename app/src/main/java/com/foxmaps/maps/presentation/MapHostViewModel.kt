@@ -10,12 +10,14 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
 
 @HiltViewModel
 class MapHostViewModel @Inject constructor(
@@ -29,6 +31,8 @@ class MapHostViewModel @Inject constructor(
     private val followUserStream = MutableStateFlow(true)
 
     private val mapLoadingStream = MutableStateFlow(true)
+
+    private val animateCameraStream = MutableStateFlow(false)
 
     private val poiStream = MutableStateFlow<PointOfInterest?>(null)
 
@@ -60,8 +64,9 @@ class MapHostViewModel @Inject constructor(
             locationPermissionStream.filterNotNull(),
             locationStream,
             followUserStream,
-        ) { permission, location, followUser ->
-            LocationState.create(permission, location, updateCamera = followUser)
+            animateCameraStream,
+        ) { permission, location, followUser, animateCamera ->
+            LocationState.create(permission, location, updateCamera = followUser, animateCamera)
         }
         combine(
             mapLoadingStream,
@@ -69,7 +74,7 @@ class MapHostViewModel @Inject constructor(
             mapBottomSheetStateStream,
         ) { mapLoading, locationState, mapBottomSheetState ->
             ScreenState.create(mapLoading, locationState, mapBottomSheetState)
-        }
+        }.debounce(screenStateDebounce)
             .onEach { screenStateStream.value = it }
             .launchIn(viewModelScope)
     }
@@ -96,5 +101,14 @@ class MapHostViewModel @Inject constructor(
 
     fun clearPointOfInterest() {
         poiStream.value = null
+    }
+
+    fun enableCameraAnimations() {
+        animateCameraStream.value = true
+    }
+
+    companion object {
+
+        private val screenStateDebounce = 80.milliseconds
     }
 }

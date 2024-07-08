@@ -4,6 +4,7 @@ plugins {
     id("com.google.android.libraries.mapsplatform.secrets-gradle-plugin")
     id("kotlin-kapt")
     alias(libs.plugins.hilt)
+    alias(libs.plugins.android.junit5)
 }
 
 android {
@@ -32,6 +33,9 @@ android {
     }
     kotlinOptions {
         jvmTarget = "1.8"
+        freeCompilerArgs += "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api"
+        freeCompilerArgs += "-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi"
+        freeCompilerArgs += "-opt-in=kotlinx.coroutines.FlowPreview"
     }
     buildFeatures {
         viewBinding = true
@@ -55,6 +59,13 @@ dependencies {
     implementation(libs.material)
     implementation(libs.timber)
     testImplementation(libs.junit)
+    testImplementation(platform(libs.junit5.bom))
+    testImplementation(libs.junit5.jupiter)
+    testImplementation(libs.junit5.jupiter.params)
+    testImplementation(libs.junit5.vintage.engine)
+    testImplementation(libs.kotlin.test)
+    testImplementation(libs.truth)
+    testImplementation(libs.turbine)
 }
 
 kapt {

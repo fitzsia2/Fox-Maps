@@ -1,6 +1,7 @@
 <resources>
     <style name="Base.Theme.FoxMaps" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="colorPrimary">@color/primary</item>
+        <item name="progressBarStyle">@style/Widget.FoxMaps.ProgressBar</item>
     </style>
 
     <style name="Theme.FoxMaps" parent="Base.Theme.FoxMaps" />
@@ -10,4 +11,6 @@
     <style name="TextAppearance.FoxMaps.Body1" parent="TextAppearance.AppCompat.Body1" />
 
     <style name="ShapeAppearance.FoxMaps.Photo" parent="ShapeAppearance.Material3.Corner.ExtraLarge" />
+
+    <style name="Widget.FoxMaps.ProgressBar" parent="Widget.AppCompat.ProgressBar" />
 </resources>

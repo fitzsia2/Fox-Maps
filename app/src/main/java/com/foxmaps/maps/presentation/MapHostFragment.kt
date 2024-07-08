@@ -18,6 +18,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.flowWithLifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.transition.TransitionManager
 import androidx.viewbinding.ViewBinding
 import com.foxmaps.R
 import com.foxmaps.databinding.MapHostFragmentBinding
@@ -107,6 +108,7 @@ class MapHostFragment : Fragment() {
         this.binding = binding
 
         binding.initBottomSheet()
+        binding.withMapAsync { map -> map.mapType = GoogleMap.MAP_TYPE_NONE }
 
         ViewCompat.setOnApplyWindowInsetsListener(binding.root) { _, insets ->
             systemBarInsets = insets.getInsets(WindowInsetsCompat.Type.systemBars())
@@ -136,7 +138,10 @@ class MapHostFragment : Fragment() {
     }
 
     private fun MapHostFragmentBinding.bind(screenState: ScreenState) {
-        progressBar.isVisible = screenState.showSpinner
+        if (fullScreenLoader.isVisible && !screenState.showFullScreenLoader) {
+            TransitionManager.beginDelayedTransition(root)
+            fullScreenLoader.isVisible = screenState.showFullScreenLoader
+        }
         when (screenState) {
             is ScreenState.Loaded -> bindLoadedScreenState(screenState)
             else -> Unit
@@ -144,7 +149,8 @@ class MapHostFragment : Fragment() {
     }
 
     private fun MapHostFragmentBinding.bindLoadedScreenState(screenState: ScreenState.Loaded) {
-        txtPermissionMessage.isVisible = screenState.locationState is LocationState.PermissionDenied
+        txtPermissionMessage.isVisible = screenState.showPermissionWarning
+        progressBar.isVisible = screenState.loading
         when (screenState.locationState) {
             is LocationState.PermissionDenied -> {
                 txtPermissionMessage.text = getString(R.string.no_permission)
@@ -161,14 +167,19 @@ class MapHostFragment : Fragment() {
 
     @SuppressLint("MissingPermission")
     private fun MapHostFragmentBinding.bindLocation(locationState: LocationState.WithLocation) {
-        initLocationTracking()
         withMapAsync { map ->
             if (locationState.updateCamera) {
                 val location = locationState.location
                 val update = CameraUpdateFactory.newLatLng(LatLng(location.latitude, location.longitude))
-                map.animateCamera(update)
+                if (locationState.animateCamera) {
+                    map.animateCamera(update)
+                } else {
+                    map.moveCamera(update)
+                    viewModel.enableCameraAnimations()
+                }
             }
         }
+        initLocationTracking()
     }
 
     @SuppressLint("MissingPermission")
@@ -179,6 +190,7 @@ class MapHostFragment : Fragment() {
                 map.isMyLocationEnabled = true
                 val uiSettings = map.uiSettings
                 uiSettings.isCompassEnabled = true
+                map.mapType = GoogleMap.MAP_TYPE_NORMAL
             }
         }
     }
@@ -297,10 +309,6 @@ class MapHostFragment : Fragment() {
     }
 
     private fun View.setPadding(insetsCompat: Insets) {
-        setPadding(insetsCompat.left, insetsCompat.top, insetsCompat.right, insetsCompat.bottom)
-    }
-
-    private fun GoogleMap.setPadding(insetsCompat: Insets) {
         setPadding(insetsCompat.left, insetsCompat.top, insetsCompat.right, insetsCompat.bottom)
     }
 

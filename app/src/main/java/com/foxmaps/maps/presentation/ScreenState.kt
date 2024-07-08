@@ -4,20 +4,18 @@ import com.foxmaps.maps.domain.MapPlace
 
 sealed interface ScreenState {
 
-    val showSpinner: Boolean
+    val showFullScreenLoader get() = this is Loading
 
-    data object Loading : ScreenState {
-
-        override val showSpinner = true
-    }
+    data object Loading : ScreenState
 
     data class Loaded(
         val locationState: LocationState,
-        val mapLoading: Boolean,
         val mapBottomSheetState: MapBottomSheetState,
     ) : ScreenState {
 
-        override val showSpinner get() = mapLoading || mapBottomSheetState is MapBottomSheetState.Loading
+        val loading = mapBottomSheetState is MapBottomSheetState.Loading
+
+        val showPermissionWarning = locationState is LocationState.PermissionDenied
     }
 
     companion object {
@@ -27,7 +25,11 @@ sealed interface ScreenState {
             locationState: LocationState,
             mapBottomSheetState: MapBottomSheetState,
         ): ScreenState {
-            return Loaded(locationState, mapLoading, mapBottomSheetState)
+            return if (mapLoading) {
+                return Loading
+            } else {
+                Loaded(locationState, mapBottomSheetState)
+            }
         }
     }
 }

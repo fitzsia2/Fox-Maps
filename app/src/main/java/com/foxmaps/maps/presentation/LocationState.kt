@@ -9,16 +9,16 @@ sealed interface LocationState {
 
     data object Loading : LocationState
 
-    data class WithLocation(val location: Location, val updateCamera: Boolean) : LocationState
+    data class WithLocation(val location: Location, val updateCamera: Boolean, val animateCamera: Boolean) : LocationState
 
     companion object {
 
-        fun create(permission: LocationPermission, location: Location?, updateCamera: Boolean): LocationState {
+        fun create(permission: LocationPermission, location: Location?, updateCamera: Boolean, animateCamera: Boolean): LocationState {
             return when (permission) {
                 LocationPermission.Denied -> PermissionDenied
                 LocationPermission.Granted -> {
                     if (location != null) {
-                        WithLocation(location, updateCamera)
+                        WithLocation(location, updateCamera, animateCamera)
                     } else {
                         Loading
                     }
