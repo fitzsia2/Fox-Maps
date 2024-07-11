@@ -146,6 +146,7 @@ class MapHostFragment : Fragment() {
             is ScreenState.Loaded -> bindLoadedScreenState(screenState)
             else -> Unit
         }
+        mapFragment.isVisible = screenState.mapIsVisible
     }
 
     private fun MapHostFragmentBinding.bindLoadedScreenState(screenState: ScreenState.Loaded) {
@@ -162,7 +163,6 @@ class MapHostFragment : Fragment() {
                 bindBottomSheet(screenState.mapBottomSheetState)
             }
         }
-        mapFragment.isVisible = screenState.locationState != LocationState.Loading
     }
 
     @SuppressLint("MissingPermission")

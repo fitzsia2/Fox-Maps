@@ -6,6 +6,8 @@ sealed interface ScreenState {
 
     val showFullScreenLoader get() = this is Loading
 
+    val mapIsVisible get() = false
+
     data object Loading : ScreenState
 
     data class Loaded(
@@ -16,6 +18,8 @@ sealed interface ScreenState {
         val loading = mapBottomSheetState is MapBottomSheetState.Loading
 
         val showPermissionWarning = locationState is LocationState.PermissionDenied
+
+        override val mapIsVisible: Boolean = locationState is LocationState.WithLocation
     }
 
     companion object {
