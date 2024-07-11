@@ -28,11 +28,10 @@ internal class MapHostViewModelTest : CoroutineTest() {
     }
 
     @Test
-    fun `emits loading after loaded when map is loaded`() = runTest {
+    fun `emits Loaded when permission is updated`() = runTest {
         val underTest = getUnderTest()
         underTest.screenStateStream.test {
             underTest.setLocationPermission(LocationPermission.Denied)
-            underTest.setMapLoading(false)
 
             awaitItem()
             val actual = awaitItem()

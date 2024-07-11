@@ -11,6 +11,7 @@ sealed interface ScreenState {
     data object Loading : ScreenState
 
     data class Loaded(
+        val mapLoading: Boolean,
         val locationState: LocationState,
         val mapBottomSheetState: MapBottomSheetState,
     ) : ScreenState {
@@ -29,11 +30,7 @@ sealed interface ScreenState {
             locationState: LocationState,
             mapBottomSheetState: MapBottomSheetState,
         ): ScreenState {
-            return if (mapLoading) {
-                return Loading
-            } else {
-                Loaded(locationState, mapBottomSheetState)
-            }
+            return Loaded(mapLoading, locationState, mapBottomSheetState)
         }
     }
 }
