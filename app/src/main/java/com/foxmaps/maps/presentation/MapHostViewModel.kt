@@ -7,6 +7,7 @@ import com.foxmaps.maps.domain.LocationPermission
 import com.foxmaps.maps.domain.MapsRepository
 import com.google.android.gms.maps.model.PointOfInterest
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
@@ -38,7 +39,8 @@ class MapHostViewModel @Inject constructor(
 
     private val mapBottomSheetStateStream = MutableStateFlow<MapBottomSheetState>(MapBottomSheetState.Closed)
 
-    val screenStateStream = MutableStateFlow<ScreenState>(ScreenState.Loading)
+    private val _screenStateStream = MutableStateFlow<ScreenState>(ScreenState.Loading)
+    val screenStateStream = _screenStateStream as Flow<ScreenState>
 
     init {
         viewModelScope.launch {
@@ -75,7 +77,7 @@ class MapHostViewModel @Inject constructor(
         ) { mapLoading, locationState, mapBottomSheetState ->
             ScreenState.create(mapLoading, locationState, mapBottomSheetState)
         }.debounce(screenStateDebounce)
-            .onEach { screenStateStream.value = it }
+            .onEach { _screenStateStream.value = it }
             .launchIn(viewModelScope)
     }
 
