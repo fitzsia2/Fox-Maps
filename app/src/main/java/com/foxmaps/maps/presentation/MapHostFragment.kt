@@ -47,7 +47,7 @@ class MapHostFragment : Fragment() {
 
     private var binding: MapHostFragmentBinding? = null
 
-    private var systemBarInsets: Insets = Insets.NONE
+    private var insets: Insets = Insets.NONE
 
     private val viewModel: MapHostViewModel by viewModels()
 
@@ -111,7 +111,7 @@ class MapHostFragment : Fragment() {
         binding.withMapAsync { map -> map.mapType = GoogleMap.MAP_TYPE_NONE }
 
         ViewCompat.setOnApplyWindowInsetsListener(binding.root) { _, insets ->
-            systemBarInsets = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            this.insets = insets.getInsets(WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout())
             binding.applyWindowInsets(insets)
             insets
         }
@@ -273,17 +273,17 @@ class MapHostFragment : Fragment() {
         val isCollapsedOrSmaller = slideOffset <= 0
         if (isCollapsedOrSmaller) {
             val bottomSheetRootY = mapBottomSheet.height - mapBottomSheet.y
-            val bottomPadding = maxOf(systemBarInsets.bottom.toFloat(), bottomSheetRootY)
+            val bottomPadding = maxOf(insets.bottom.toFloat(), bottomSheetRootY)
             withMapAsync { map ->
-                map.setPadding(systemBarInsets.left, systemBarInsets.top, systemBarInsets.right, bottomPadding.toInt())
+                map.setPadding(insets.left, insets.top, insets.right, bottomPadding.toInt())
             }
         }
     }
 
     private fun MapHostFragmentBinding.updateBottomSheetPadding(slideOffset: Float) {
         val compensation = maxOf(slideOffset - 0.9, 0.0) * 10
-        val topPadding = compensation * systemBarInsets.top
-        mapBottomSheet.setPadding(systemBarInsets.left, topPadding.toInt(), systemBarInsets.right, systemBarInsets.bottom)
+        val topPadding = compensation * insets.top
+        mapBottomSheet.setPadding(insets.left, topPadding.toInt(), insets.right, insets.bottom)
     }
 
     private fun MapHostFragmentBinding.initMap() {
