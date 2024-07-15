@@ -7,8 +7,8 @@ import com.foxmaps.maps.domain.LocationPermission
 import com.foxmaps.maps.domain.MapsRepository
 import com.google.android.gms.maps.model.PointOfInterest
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
@@ -37,10 +37,11 @@ class MapHostViewModel @Inject constructor(
 
     private val poiStream = MutableStateFlow<PointOfInterest?>(null)
 
-    private val mapBottomSheetStateStream = MutableStateFlow<MapBottomSheetState>(MapBottomSheetState.Closed)
+    private val mapBottomSheetStateStream =
+        MutableStateFlow<MapBottomSheetState>(MapBottomSheetState.Closed)
 
     private val _screenStateStream = MutableStateFlow<ScreenState>(ScreenState.Loading)
-    val screenStateStream = _screenStateStream as Flow<ScreenState>
+    val screenStateStream = _screenStateStream.asStateFlow()
 
     init {
         viewModelScope.launch {
@@ -52,7 +53,8 @@ class MapHostViewModel @Inject constructor(
                     } else {
                         launch {
                             try {
-                                mapBottomSheetStateStream.value = MapBottomSheetState.Loading(poi.name)
+                                mapBottomSheetStateStream.value =
+                                    MapBottomSheetState.Loading(poi.name)
                                 val place = mapsRepository.getPlace(poi.placeId)
                                 mapBottomSheetStateStream.value = MapBottomSheetState.Loaded(place)
                             } catch (e: Exception) {
