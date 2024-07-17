@@ -8,14 +8,13 @@ import com.foxmaps.maps.domain.MapsRepository
 import com.google.android.gms.maps.model.PointOfInterest
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import kotlin.time.Duration.Companion.milliseconds
@@ -40,13 +39,18 @@ class MapHostViewModel @Inject constructor(
     private val mapBottomSheetStateStream =
         MutableStateFlow<MapBottomSheetState>(MapBottomSheetState.Closed)
 
-    private val _screenStateStream = MutableStateFlow<ScreenState>(ScreenState.Loading)
-    val screenStateStream = _screenStateStream.asStateFlow()
+    private val locationStateStream = combine(
+        locationPermissionStream.filterNotNull(),
+        locationStream,
+        followUserStream,
+        animateCameraStream,
+    ) { permission, location, followUser, animateCamera ->
+        LocationState.create(permission, location, updateCamera = followUser, animateCamera)
+    }
 
     init {
         viewModelScope.launch {
-            poiStream
-                .distinctUntilChanged { old, new -> old?.placeId == new?.placeId }
+            poiStream.distinctUntilChanged { old, new -> old?.placeId == new?.placeId }
                 .collectLatest { poi ->
                     if (poi == null) {
                         mapBottomSheetStateStream.value = MapBottomSheetState.Closed
@@ -64,24 +68,17 @@ class MapHostViewModel @Inject constructor(
                     }
                 }
         }
-        val locationStateStream = combine(
-            locationPermissionStream.filterNotNull(),
-            locationStream,
-            followUserStream,
-            animateCameraStream,
-        ) { permission, location, followUser, animateCamera ->
-            LocationState.create(permission, location, updateCamera = followUser, animateCamera)
-        }
-        combine(
-            mapLoadingStream,
-            locationStateStream,
-            mapBottomSheetStateStream,
-        ) { mapLoading, locationState, mapBottomSheetState ->
-            ScreenState.create(mapLoading, locationState, mapBottomSheetState)
-        }.debounce(screenStateDebounce)
-            .onEach { _screenStateStream.value = it }
-            .launchIn(viewModelScope)
     }
+
+    val screenStateStream = combine(
+        mapLoadingStream,
+        locationStateStream,
+        mapBottomSheetStateStream,
+    ) { mapLoading, locationState, mapBottomSheetState ->
+        ScreenState.create(mapLoading, locationState, mapBottomSheetState)
+    }
+        .debounce(screenStateDebounce)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(), ScreenState.Loading)
 
     fun setMapLoading(value: Boolean) {
         mapLoadingStream.value = value
