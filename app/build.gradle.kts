@@ -53,6 +53,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.ktx)
     implementation(libs.google.maps)
     implementation(libs.google.maps.ktx)
+    implementation(libs.google.maps.routing)
     implementation(libs.google.places.ktx)
     implementation(libs.hilt)
     kapt(libs.hilt.compiler)

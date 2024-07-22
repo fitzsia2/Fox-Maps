@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.foxmaps.maps.domain.Location
 import com.foxmaps.maps.domain.LocationPermission
 import com.foxmaps.maps.domain.MapsRepository
+import com.foxmaps.maps.domain.toLocation
 import com.google.android.gms.maps.model.PointOfInterest
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -98,6 +99,12 @@ class MapHostViewModel @Inject constructor(
 
     fun selectPointOfInterest(pointOfInterest: PointOfInterest) {
         poiStream.value = pointOfInterest
+        viewModelScope.launch {
+            locationStream.value?.let {
+                val l = pointOfInterest.latLng.toLocation()
+                mapsRepository.getRoutes(it, l)
+            }
+        }
     }
 
     fun clearPointOfInterest() {

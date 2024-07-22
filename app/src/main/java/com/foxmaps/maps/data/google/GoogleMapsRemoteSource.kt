@@ -10,7 +10,12 @@ import com.google.android.libraries.places.api.model.Place
 import com.google.android.libraries.places.api.net.PlacesClient
 import com.google.android.libraries.places.ktx.api.net.awaitFetchPhoto
 import com.google.android.libraries.places.ktx.api.net.awaitFetchPlace
+import com.google.maps.routing.v2.ComputeRoutesRequest
+import com.google.maps.routing.v2.RoutesClient
+import com.google.maps.routing.v2.Waypoint
+import com.google.type.LatLng
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import timber.log.Timber
 import javax.inject.Inject
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -26,16 +31,8 @@ class GoogleMapsRemoteSource @Inject constructor(
     }
 
     override suspend fun getPlace(placeId: String): MapPlace {
-        val fields = listOf(
-            Place.Field.ID,
-            Place.Field.NAME,
-            Place.Field.LAT_LNG,
-            Place.Field.ADDRESS,
-            Place.Field.PHOTO_METADATAS,
-            Place.Field.EDITORIAL_SUMMARY,
-        )
 
-        val place = placesClient.awaitFetchPlace(placeId, fields).place
+        val place = placesClient.awaitFetchPlace(placeId, getPlaceRequestPlaceFields).place
 
         val photos = place.photoMetadatas?.firstOrNull()?.let { photoMetadata ->
             val bitmap = placesClient.awaitFetchPhoto(photoMetadata).bitmap
@@ -43,5 +40,39 @@ class GoogleMapsRemoteSource @Inject constructor(
         } ?: listOf()
         val location = Location(place.latLng!!.latitude, place.latLng!!.longitude)
         return MapPlace(place.name!!, location, place.id!!, photos, place.editorialSummary)
+    }
+
+    override suspend fun getRoute(origin: Location, destination: Location) {
+        val client = RoutesClient.create()
+        val newBuilder = ComputeRoutesRequest.newBuilder()
+        val originLatLng = LatLng.newBuilder()
+            .setLatitude(origin.latitude)
+            .setLongitude(origin.longitude)
+        val location = com.google.maps.routing.v2.Location.newBuilder()
+            .setLatLng(originLatLng)
+        newBuilder.origin = Waypoint.newBuilder()
+            .setLocation(location)
+            .build()
+        newBuilder.destination = Waypoint.newBuilder()
+            .setLocation(com.google.maps.routing.v2.Location.newBuilder().setLatLng(LatLng.newBuilder().setLatitude(destination.latitude).setLongitude(destination.longitude)))
+            .build()
+
+        val response = client.computeRoutes(newBuilder.build())
+
+        response.routesList.forEach { route ->
+            Timber.d(route.description)
+        }
+    }
+
+    companion object {
+
+        private val getPlaceRequestPlaceFields = listOf(
+            Place.Field.ID,
+            Place.Field.NAME,
+            Place.Field.LAT_LNG,
+            Place.Field.ADDRESS,
+            Place.Field.PHOTO_METADATAS,
+            Place.Field.EDITORIAL_SUMMARY,
+        )
     }
 }
